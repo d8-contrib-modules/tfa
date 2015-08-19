@@ -10,8 +10,7 @@ namespace Drupal\tfa\Form;
 use Drupal\Core\Form\ConfigFormBase;
 use Drupal\Core\Form\FormStateInterface;
 
-class EntryForm extends ConfigFormBase
-{
+class EntryForm extends ConfigFormBase {
 
   /**
    * {@inheritdoc}
@@ -39,13 +38,13 @@ class EntryForm extends ConfigFormBase
     // Get TFA plugins form.
     //$form = $tfa->getForm($form, $form_state);
     //if ($tfa->hasFallback()) {
-      $form['actions']['fallback'] = array(
-        '#type' => 'submit',
-        '#value' => t("Can't access your account?"),
-        '#submit' => array('tfa_form_submit'),
-        '#limit_validation_errors' => array(),
-        '#weight' => 20,
-      );
+    $form['actions']['fallback'] = array(
+      '#type' => 'submit',
+      '#value' => t("Can't access your account?"),
+      '#submit' => array('tfa_form_submit'),
+      '#limit_validation_errors' => array(),
+      '#weight' => 20,
+    );
     //}
 
     // Set account element.
@@ -70,4 +69,12 @@ class EntryForm extends ConfigFormBase
   public function submitForm(array &$form, FormStateInterface $form_state) {
     parent::submitForm($form, $form_state);
   }
+
+  /**
+   * {@inheritdoc}
+   */
+  protected function getEditableConfigNames() {
+    return ['tfa.settings'];
+  }
+
 }

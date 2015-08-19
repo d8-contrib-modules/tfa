@@ -9,12 +9,12 @@ tfa.entry:
     #'access arguments' => array(2, 3),
   options:
     _maintenance_access: TRUE
-tfa.settings_form:
+tfa.settings:
   path: 'admin/config/security/tfa/settings'
   defaults:
     _form: '\Drupal\tfa\Form\SettingsForm'
-    _title: 'tfa Settings'
+    _title: 'TFA Settings'
   options:
-      _admin_route: TRUE
+    _admin_route: TRUE
   requirements:
     _permission: 'administer site configuration'
