@@ -7,7 +7,7 @@
 
 namespace Drupal\tfa;
 
-use Drupal\Component\Utility\SafeMarkup;
+use  \Drupal\Component\Render\FormattableMarkup;
 use Drupal\tfa\Plugin\TfaBasePlugin;
 use Drupal\Core\Form\FormStateInterface;
 
@@ -80,12 +80,12 @@ class Tfa {
   public function __construct(array $plugins, array $context) {
     if (empty($plugins)) {
       throw new \RuntimeException(
-        SafeMarkup::format('TFA must have at least 1 valid plugin',
+          new FormattableMarkup('TFA must have at least 1 valid plugin',
           array('@function' => 'Tfa::__construct')));
     }
     if (empty($plugins['validate'])) {
       throw new \RuntimeException(
-        SafeMarkup::format('TFA must have at least 1 valid validation plugin',
+          new FormattableMarkup('TFA must have at least 1 valid validation plugin',
           array('@function' => 'Tfa::__construct')));
     }
 
