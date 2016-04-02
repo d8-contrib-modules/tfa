@@ -203,7 +203,14 @@ class TfaLoginForm extends UserLoginForm {
    * @param object $account User account.
    * @return string Random hash.
    */
-  //function tfa_login_hash($account) {
+  function tfa_login_hash($account) {
+    // Using account login will mean this hash will become invalid once user has
+    // authenticated via TFA.
+    $data = implode(':', array($account->name, $account->pass, $account->login));
+    return drupal_hash_base64($data);
+  }
+
+
   protected function getLoginHash($account) {
     // Using account login will mean this hash will become invalid once user has
     // authenticated via TFA.
