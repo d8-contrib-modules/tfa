@@ -8,6 +8,7 @@ namespace Drupal\tfa;
 
 
 use Drupal\Core\Config\ConfigFactoryInterface;
+use \Drupal\tfa\Form\TfaLoginForm;
 use Drupal\Core\Entity\EntityManagerInterface;
 use Drupal\Core\Extension\ModuleHandlerInterface;
 use Drupal\Core\Session\AccountProxyInterface;
@@ -66,13 +67,18 @@ class TfaManager {
   protected $tfa;
 
   /**
+   * @var \Drupal\tfa\Form\TfaLoginForm
+   */
+  protected $tfaValidation;
+
+  /**
    * @param \Drupal\Core\Extension\ModuleHandlerInterface $module_handler
    * @param \Drupal\Core\Config\ConfigFactoryInterface $config_factory
    * @param \Drupal\Core\Session\AccountProxyInterface $current_user
    * @param \Drupal\Core\Entity\EntityManagerInterface $entity_manager
    * @param \Symfony\Component\HttpFoundation\Session\SessionInterface $session
    */
-  function __construct(ModuleHandlerInterface $module_handler, ConfigFactoryInterface $config_factory, AccountProxyInterface $current_user, EntityManagerInterface $entity_manager, SessionInterface $session, RequestStack $request_stack ) {
+  function __construct(ModuleHandlerInterface $module_handler, ConfigFactoryInterface $config_factory, AccountProxyInterface $current_user, EntityManagerInterface $entity_manager, SessionInterface $session, RequestStack $request_stack, TfaLoginForm $tfaValidation ) {
     $this->moduleHander = $module_handler;
     //$this->configFactory = $config_factory;
     $this->currentUser = $current_user;
@@ -80,7 +86,7 @@ class TfaManager {
     $this->session = $session;
     $this->tfaSettings = $config_factory->get('tfa.settings');
     $this->request = $request_stack->getCurrentRequest();
-
+    $this->tfaValidation = $tfaValidation;
   }
 
 
@@ -206,7 +212,23 @@ class TfaManager {
     $this->tfa = NULL;
   }
 
-
+  /**
+   * Context for account TFA process.
+   *
+   * @param object $account
+   *   User account
+   * @return array
+   *   @see tfa_start_context() for format
+   */
+  function tfa_get_context($account) {
+    $context = array();
+    if (isset($_SESSION['tfa'][$account->uid])) {
+      $context = $_SESSION['tfa'][$account->uid];
+    }
+    // Allow other modules to modify TFA context.
+    //drupal_alter('tfa_context', $context);
+    return $context;
+  }
 
 
 
@@ -253,9 +275,9 @@ class TfaManager {
    */
   public function entryAccess($account, $url_hash) {
     // Generate a hash for this account.
-    //$hash = tfa_login_hash($account);
-    //$context = tfa_get_context($account);
-    //return $hash === $url_hash && !empty($context) && $context['uid'] === $account->uid;
+    $hash = $this->tfaValidation->tfa_login_hash($account);
+    $context = $this->tfa_get_context($account);
+    return $hash === $url_hash && !empty($context) && $context['uid'] === $account->uid;
     return TRUE;
   }
 
