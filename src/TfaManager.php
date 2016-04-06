@@ -225,14 +225,14 @@ class TfaManager {
    * @deprecated
    */
   public function login($account) {
-    //@todo Implement flood controls for the TFA login.
+    global $user;
 
+    $user = $account;
+    user_login_finalize($user);
     // Truncate flood for user.
-    //flood_clear_event('tfa_begin');
-    //$identifier = variable_get('user_failed_login_identifier_uid_only', FALSE) ? $account->uid : $account->uid . '-' . ip_address();
-    //flood_clear_event('tfa_user', $identifier);
-    //$edit = array();
-    //user_module_invoke('login', $edit, $user);
+    \Drupal::flood()->clear('tfa_begin');
+    $identifier = \Drupal::config('tfa.settings')->get('user_failed_login_identifier_uid_only', FALSE) ? $account->uid : $account->uid . '-' . Drupal::request()->getClientIp();
+    \Drupal::flood()->clear('tfa_user', $identifier);
   }
 
   /**
