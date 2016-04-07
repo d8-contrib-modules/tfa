@@ -4,3 +4,4 @@ send_plugins: { }
 login_plugins: { }
 validate_plugins: { }
 validate_weights: { }
+weight: 9
