@@ -8,6 +8,7 @@ namespace Drupal\tfa\Form;
 
 use Drupal\tfa\TfaLoginPluginManager;
 use Drupal\tfa\TfaValidationPluginManager;
+use Drupal\user\Entity\User;
 use Drupal\user\Form\UserLoginForm;
 use Drupal\Core\Flood\FloodInterface;
 use Drupal\Core\Form\FormStateInterface;
@@ -99,8 +100,8 @@ class TfaLoginForm extends UserLoginForm {
       elseif (!$this->loginComplete($account) && $this->ready($tfaValidationPlugin) && !$this->loginAllowed($account)) {
 
         // Restart flood levels, session context, and TFA process.
-        //flood_clear_event('tfa_validate');
-        //flood_register_event('tfa_begin');
+        \Drupal::flood()->clear('tfa_validate');
+        \Drupal::flood()->register('tfa_begin');
 //      $context = tfa_start_context($account);
 //      $tfa = _tfa_get_process($account);
 
@@ -150,6 +151,38 @@ class TfaLoginForm extends UserLoginForm {
     if (isset($route)) {
       $form_state->setRedirect($route);
     }
+  }
+
+  /**
+   * Authenticate the user.
+   *
+   * Does basically the same thing that user_login_finalize does but with our own custom
+   * hooks.
+   *
+   * @param $account User account object.
+   */
+  public function login($account) { 
+    global $user;
+    $user = $account;
+    user_login_finalize($user);
+    $flood_config = $this->config('user.flood');
+
+    // Truncate flood for user.
+    \Drupal::flood()->clear('tfa_begin');
+    if ($flood_config->get('uid_only')) {
+      // Register flood events based on the uid only, so they apply for any
+      // IP address. This is the most secure option.
+      $identifier = $account->uid;
+    }
+    else {
+      // The default identifier is a combination of uid and IP address. This
+      // is less secure but more resistant to denial-of-service attacks that
+      // could lock out all users with public user names.
+      $identifier = $account->uid . '-' . $this->getRequest()->getClientIP();
+    }
+    \Drupal::flood()->clear('tfa_user', $identifier);
+    //$edit = array();
+    //user_module_invoke('login', $edit, $user);
   }
 
   /**
