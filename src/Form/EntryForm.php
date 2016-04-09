@@ -42,7 +42,7 @@ class EntryForm extends FormBase {
     return new static(
       $container->get('plugin.manager.tfa.validation'),
       $container->get('plugin.manager.tfa.login'),
-      $container->get('plugin.manager.tfa.base'),
+      $container->get('plugin.manager.tfa.base')
       );
   }
 
@@ -185,7 +185,7 @@ class EntryForm extends FormBase {
     if ($this->tfaSettings->get('tfa_test_mode')) {
       return FALSE;
     }
-    $window = $this->tfaSettings->->get('tfa_flood_window');
+    $window = $this->tfaSettings->get('tfa_flood_window');
     $user_window = $this->tfaSettings->get('tfa_user_window');
     $flood_config = $this->config('user.flood');
     //$context = $tfa->getContext();
@@ -208,7 +208,7 @@ class EntryForm extends FormBase {
       return TRUE;
     }
     // Check entire process flood.
-    elseif (!\Drupal::flood()->isAllowed('tfa_begin', $this->tfaSettings->->get('tfa_begin_threshold'), $window)) {
+    elseif (!\Drupal::flood()->isAllowed('tfa_begin', $this->tfaSettings->get('tfa_begin_threshold'), $window)) {
       drupal_set_message(t('You have reached the threshold for TFA attempts. Please try again in !time minutes.', array('!time' => round($window / 60))), 'error');
       return TRUE;
     }
