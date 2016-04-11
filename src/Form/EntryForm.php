@@ -30,19 +30,16 @@ class EntryForm extends FormBase {
   protected $tfaBasePlugin;
 
 
-  public function __construct(TfaValidationPluginManager $tfa_validation_manager, TfaLoginPluginManager $tfa_login_manager, TfaBasePlugin $tfaBasePlugin) {
+  public function __construct(TfaValidationPluginManager $tfa_validation_manager, TfaLoginPluginManager $tfa_login_manager) {
     $this->tfaValidationManager = $tfa_validation_manager;
     $this->tfaLoginManager = $tfa_login_manager;
     $this->tfaSettings = \Drupal::config('tfa.settings');
-    $this->tfaBasePlugin= $tfaBasePlugin;
-
   }
 
   public static function create(ContainerInterface $container) {
     return new static(
       $container->get('plugin.manager.tfa.validation'),
-      $container->get('plugin.manager.tfa.login'),
-      $container->get('plugin.manager.tfa.base')
+      $container->get('plugin.manager.tfa.login')
       );
   }
 
@@ -169,6 +166,7 @@ class EntryForm extends FormBase {
    * @return bool
    */
   public function floodIsAllowed($window = '') {
+    $tfaBasePlugin = new TfaBasePlugin();
     if (method_exists($this->tfaBasePlugin, 'floodIsAllowed')) {
       return $this->tfaBasePlugin->floodIsAllowed($window);
     }
@@ -181,7 +179,7 @@ class EntryForm extends FormBase {
    * @return bool
    */
    // Argument of this function has to be changed , depending upon getContext function
-  public function _tfa_hit_flood($tfa) {
+   private function _tfa_hit_flood($tfa) {
 
     if ($this->tfaSettings->get('tfa_test_mode')) {
       return FALSE;

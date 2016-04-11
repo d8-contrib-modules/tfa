@@ -2,9 +2,6 @@ services:
   plugin.manager.tfa.login:
     class: Drupal\tfa\TfaLoginPluginManager
     parent: default_plugin_manager
-  plugin.manager.tfa.base:
-      class: Drupal\tfa\Plugin\TfaBasePlugin
-      parent: default_plugin_manager
   plugin.manager.tfa.send:
     class: Drupal\tfa\TfaSendPluginManager
     parent: default_plugin_manager
