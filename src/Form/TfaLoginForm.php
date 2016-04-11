@@ -161,7 +161,7 @@ class TfaLoginForm extends UserLoginForm {
    *
    * @param $account User account object.
    */
-  public function login($account) { 
+  public function login($account) {
     global $user;
     $user = $account;
     user_login_finalize($user);
@@ -181,8 +181,6 @@ class TfaLoginForm extends UserLoginForm {
       $identifier = $account->uid . '-' . $this->getRequest()->getClientIP();
     }
     \Drupal::flood()->clear('tfa_user', $identifier);
-    //$edit = array();
-    //user_module_invoke('login', $edit, $user);
   }
 
   /**
