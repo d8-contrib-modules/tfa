@@ -60,10 +60,11 @@ class EntryForm extends FormBase {
   public function buildForm(array $form, FormStateInterface $form_state, AccountInterface $user = null) {
     // Check flood tables.
 
-    if ($this->_tfa_hit_flood()) {
-     // \Drupal::moduleHandler()->invokeAll('tfa_flood_hit', [$tfa->getContext()]);
+//    if (_tfa_hit_flood($tfa)) {
+//      \Drupal::moduleHandler()->invokeAll('tfa_flood_hit', [$tfa->getContext()]);
 //      return drupal_access_denied();
-    }
+//    }
+//
 
 
     // Get TFA plugins form.
@@ -176,11 +177,11 @@ class EntryForm extends FormBase {
 
   /**
    * Check if flood has been hit.
-   *
+   * @param Tfa $tfa
    * @return bool
    */
-
-  public function _tfa_hit_flood() {
+   // Argument of this function has to be changed , depending upon getContext function
+  public function _tfa_hit_flood($tfa) {
 
     if ($this->tfaSettings->get('tfa_test_mode')) {
       return FALSE;

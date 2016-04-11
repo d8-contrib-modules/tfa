@@ -172,13 +172,13 @@ class TfaLoginForm extends UserLoginForm {
     if ($flood_config->get('uid_only')) {
       // Register flood events based on the uid only, so they apply for any
       // IP address. This is the most secure option.
-      $identifier = $account->uid;
+      $identifier = $account->id();
     }
     else {
       // The default identifier is a combination of uid and IP address. This
       // is less secure but more resistant to denial-of-service attacks that
       // could lock out all users with public user names.
-      $identifier = $account->uid . '-' . $this->getRequest()->getClientIP();
+      $identifier = $account->id() . '-' . $this->getRequest()->getClientIP();
     }
     \Drupal::flood()->clear('tfa_user', $identifier);
   }
