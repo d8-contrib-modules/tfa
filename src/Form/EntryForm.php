@@ -18,15 +18,16 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class EntryForm extends FormBase {
 
-  /**
-   * @var \Drupal\tfa\TfaManager
-   */
   protected $tfaValidationManager;
   protected $tfaLoginManager;
   protected $tfaValidationPlugin;
   protected $tfaLoginPlugins;
   protected $tfaFallbackPlugin;
   protected $tfaSettings;
+
+  /**
+   * @var \Drupal\tfa\Plugin\TfaBasePlugin
+   */
   protected $tfaBasePlugin;
 
 
@@ -166,7 +167,7 @@ class EntryForm extends FormBase {
    * @return bool
    */
   public function floodIsAllowed($window = '') {
-    $tfaBasePlugin = new TfaBasePlugin();
+    
     if (method_exists($this->tfaBasePlugin, 'floodIsAllowed')) {
       return $this->tfaBasePlugin->floodIsAllowed($window);
     }
