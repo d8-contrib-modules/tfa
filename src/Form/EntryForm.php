@@ -11,24 +11,30 @@ use Drupal\Core\Form\FormBase;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Session\AccountInterface;
 use Drupal\tfa\Plugin\TfaValidationInterface;
+use Drupal\tfa\Plugin\TfaBasePlugin;
 use Drupal\tfa\TfaLoginPluginManager;
 use Drupal\tfa\TfaValidationPluginManager;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 
 class EntryForm extends FormBase {
 
-  /**
-   * @var \Drupal\tfa\TfaManager
-   */
   protected $tfaValidationManager;
   protected $tfaLoginManager;
   protected $tfaValidationPlugin;
   protected $tfaLoginPlugins;
   protected $tfaFallbackPlugin;
+  protected $tfaSettings;
+
+  /**
+   * @var \Drupal\tfa\Plugin\TfaBasePlugin
+   */
+  protected $tfaBasePlugin;
+
 
   public function __construct(TfaValidationPluginManager $tfa_validation_manager, TfaLoginPluginManager $tfa_login_manager) {
     $this->tfaValidationManager = $tfa_validation_manager;
     $this->tfaLoginManager = $tfa_login_manager;
+    $this->tfaSettings = \Drupal::config('tfa.settings');
   }
 
   public static function create(ContainerInterface $container) {
@@ -51,12 +57,13 @@ class EntryForm extends FormBase {
    */
   public function buildForm(array $form, FormStateInterface $form_state, AccountInterface $user = null) {
     // Check flood tables.
-    //@TODO Reimplement Flood Controls.
+
 //    if (_tfa_hit_flood($tfa)) {
 //      \Drupal::moduleHandler()->invokeAll('tfa_flood_hit', [$tfa->getContext()]);
 //      return drupal_access_denied();
 //    }
 //
+
 
     // Get TFA plugins form.
     $this->tfaValidationPlugin = $this->tfaValidationManager->getInstance(['uid' => $user->id()]);
@@ -154,6 +161,69 @@ class EntryForm extends FormBase {
   }
 
   /**
+   * Checks if user is allowed to continue with plugin action.
+   *
+   * @param string $window
+   * @return bool
+   */
+  public function floodIsAllowed($window = '') {
+    
+    if (method_exists($this->tfaBasePlugin, 'floodIsAllowed')) {
+      return $this->tfaBasePlugin->floodIsAllowed($window);
+    }
+    return TRUE;
+  }
+
+  /**
+   * Check if flood has been hit.
+   * @param Tfa $tfa
+   * @return bool
+   */
+   // Argument of this function has to be changed , depending upon getContext function
+   private function _tfa_hit_flood($tfa) {
+
+    if ($this->tfaSettings->get('tfa_test_mode')) {
+      return FALSE;
+    }
+    $window = $this->tfaSettings->get('tfa_flood_window');
+    $user_window = $this->tfaSettings->get('tfa_user_window');
+    $flood_config = $this->config('user.flood');
+    //$context = $tfa->getContext();
+    if ($flood_config->get('uid_only')) {
+      // Register flood events based on the uid only, so they apply for any
+      // IP address. This is the most secure option.
+      //$identifier = context['uid'];
+    }
+    else {
+      // The default identifier is a combination of uid and IP address. This
+      // is less secure but more resistant to denial-of-service attacks that
+      // could lock out all users with public user names.
+     // $identifier = context['uid'] . '-' . $this->getRequest()->getClientIP();
+    }
+
+
+    // Check user specific flood
+    if (!\Drupal::flood()->isAllowed('tfa_user', $this->tfaSettings->get('tfa_user_threshold'), $user_window, $identifier)) {
+      drupal_set_message(t('You have reached the threshold for incorrect code entry attempts. Please try again in !time minutes.', array('!time' => round($user_window / 60))), 'error');
+      return TRUE;
+    }
+    // Check entire process flood.
+    elseif (!\Drupal::flood()->isAllowed('tfa_begin', $this->tfaSettings->get('tfa_begin_threshold'), $window)) {
+      drupal_set_message(t('You have reached the threshold for TFA attempts. Please try again in !time minutes.', array('!time' => round($window / 60))), 'error');
+      return TRUE;
+    }
+    // Check TFA plugin flood.
+    elseif (!$this->floodIsAllowed($window)) {
+      foreach ($this->tfaBasePlugin->getErrorMessages() as $message) {
+        drupal_set_message($message, 'error');
+      }
+      return TRUE;
+    }
+    return FALSE;
+  }
+
+
+  /**
    * Run TFA process finalization.
    */
   public function finalize() {
@@ -177,7 +247,5 @@ class EntryForm extends FormBase {
   protected function getEditableConfigNames() {
     return ['tfa.settings'];
   }
-
-
 
 }

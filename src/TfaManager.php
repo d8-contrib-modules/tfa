@@ -74,7 +74,7 @@ class TfaManager {
    */
   function __construct(ModuleHandlerInterface $module_handler, ConfigFactoryInterface $config_factory, AccountProxyInterface $current_user, EntityManagerInterface $entity_manager, SessionInterface $session, RequestStack $request_stack ) {
     $this->moduleHander = $module_handler;
-    //$this->configFactory = $config_factory;
+    $this->configFactory = $config_factory;
     $this->currentUser = $current_user;
     $this->entityManager = $entity_manager;
     $this->session = $session;
@@ -205,36 +205,7 @@ class TfaManager {
     // Clear existing static TFA process.
     $this->tfa = NULL;
   }
-
-
-
-
-
-  /**
-   * Authenticate the user.
-   *
-   * Does basically the same thing that user_login_finalize does but with our own custom
-   * hooks.
-   *
-   * @deprecated
-   *
-   * @TODO Use user_login_finalize and utilize the user_login hook that it implements to
-   * do the additional flood stuff.
-   *
-   * @param $account User account object.
-   * @deprecated
-   */
-  public function login($account) {
-    //@todo Implement flood controls for the TFA login.
-
-    // Truncate flood for user.
-    //flood_clear_event('tfa_begin');
-    //$identifier = variable_get('user_failed_login_identifier_uid_only', FALSE) ? $account->uid : $account->uid . '-' . ip_address();
-    //flood_clear_event('tfa_user', $identifier);
-    //$edit = array();
-    //user_module_invoke('login', $edit, $user);
-  }
-
+  
   /**
    * Remove context for account.
    *

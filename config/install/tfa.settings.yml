@@ -4,3 +4,8 @@ send_plugins: { }
 login_plugins: { }
 validate_plugins: { }
 validate_weights: { }
+tfa_user_window: 900
+tfa_test_mode: 0
+tfa_flood_window: 3600
+tfa_user_threshold: 6
+tfa_begin_threshold: 6
