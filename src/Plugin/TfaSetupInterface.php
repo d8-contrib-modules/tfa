@@ -37,4 +37,10 @@ interface TfaSetupInterface {
    */
   public function submitSetupForm(array $form, FormStateInterface &$form_state);
 
+  /**
+   * Returns a list of links containing helpful information for plugin use.
+   * @return string[]
+   */
+  public function getHelpLinks();
+
 }

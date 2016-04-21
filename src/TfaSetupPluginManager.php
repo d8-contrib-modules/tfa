@@ -28,5 +28,4 @@ class TfaSetupPluginManager extends DefaultPluginManager {
     $this->alterInfo('tfa_setup_info');
     $this->setCacheBackend($cache_backend, 'tfa_setup');
   }
-
 }

@@ -41,5 +41,12 @@ class TfaSetup extends Plugin {
    */
   public $description;
 
+  /**
+   * The helper metadata for setup plugin
+   *
+   * @var string[]
+   */
+  public $help_links;
+
 
 }

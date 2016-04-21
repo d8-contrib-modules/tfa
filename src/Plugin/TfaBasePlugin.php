@@ -61,7 +61,8 @@ abstract class TfaBasePlugin extends PluginBase {
    *       Plugin-specific context for use during TfaSetup.
    *
    */
-  public function __construct(array $context) {
+  public function __construct(array $context, array $configuration, $plugin_id, $plugin_definition) {
+    parent::__construct($configuration, $plugin_id, $plugin_definition);
     $this->context = $context;
     // Default code length is 6.
     $this->codeLength = 6;
