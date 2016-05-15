@@ -20,3 +20,6 @@ tfa.settings:
     validate_weights:
       type: sequence
       label: 'Validation plugins weights'
+    weight:
+      type: integer
+      label: 'Weight of the tab'

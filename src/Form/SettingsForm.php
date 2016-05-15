@@ -115,6 +115,14 @@ class SettingsForm extends ConfigFormBase {
       '#default_value' => $config->get('enabled'),
       '#description' => t('Enable TFA for account authentication.'),
     );
+    
+	// Option to set tfa tab in userprofile
+	$form['weight'] = array(
+     '#type' => 'weight',
+     '#title' => $this->t('Weight of the tfa tab'),
+     '#default_value' => $config->get('weight'),
+     '#delta' => 30,
+    );
 
     //@TODO Figure out why we allow multiple validation plugins?
     if (count($validate_plugins)) {
@@ -285,6 +293,7 @@ class SettingsForm extends ConfigFormBase {
 
     $this->config('tfa.settings')
       ->set('enabled', $form_state->getValue('tfa_enabled'))
+	  ->set('weight', $form_state->getValue('weight'))
       ->set('setup_plugins', array_filter($form_state->getValue('tfa_setup')))
       ->set('send_plugins', array_filter($form_state->getValue('tfa_send')))
       ->set('login_plugins', array_filter($form_state->getValue('tfa_login')))
