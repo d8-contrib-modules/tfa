@@ -100,8 +100,10 @@ class TfaLoginPluginManager extends DefaultPluginManager {
    * Returns an array of enabled login plugins.
    *
    * @param array $configuration
+   *    The configuraton array.
    *
    * @return array|null
+   *   An array of login plugins.
    */
   public function getPlugins($configuration = array()) {
     $plugin_ids = $this->tfaSettings->get('login_plugins');

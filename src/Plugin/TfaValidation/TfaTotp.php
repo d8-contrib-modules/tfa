@@ -117,10 +117,10 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
   public function validateForm(array $form, FormStateInterface $form_state) {
     $values = $form_state->getValues();
     if (!$this->validate($values['code'])) {
-      $form_state->setErrorByName('code', t('Invalid application code. Please try again.'));
+      $this->errorMessages['code'] = t('Invalid application code. Please try again.');
       if ($this->alreadyAccepted) {
         $form_state->clearErrors();
-        $form_state->setErrorByName('code', t('Invalid code, it was recently used for a login. Please try a new code.'));
+        $this->errorMessages['code'] = t('Invalid code, it was recently used for a login. Please try a new code.');
       }
       return FALSE;
     }

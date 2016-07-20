@@ -100,6 +100,7 @@ class EntryForm extends FormBase {
     $this->tfaValidationPlugin = $this->tfaValidationManager->createInstance($validate_plugin, ['uid' => $user->id()]);
     $form = $this->tfaValidationPlugin->getForm($form, $form_state);
 
+
     if ($this->tfaLoginPlugins = $this->tfaLoginManager->getPlugins(['uid' => $user->id()])) {
       foreach ($this->tfaLoginPlugins as $login_plugin) {
         if (method_exists($login_plugin, 'getForm')) {
@@ -108,24 +109,14 @@ class EntryForm extends FormBase {
       }
     }
 
-    // @TODO Add $fallback plugin capabilities.
-    // If there is a fallback method, set it.
-    //    if ($tfa->hasFallback()) {
-    //      $form['actions']['fallback'] = array(
-    //        '#type' => 'submit',
-    //        '#value' => t("Can't access your account?"),
-    //        '#submit' => array('tfa_form_submit'),
-    //        '#limit_validation_errors' => array(),
-    //        '#weight' => 20,
-    //      );
-    //    }
-    // Set account element.
     $form['account'] = array(
       '#type' => 'value',
       '#value' => $user,
     );
 
     return $form;
+
+
   }
 
   /**
@@ -136,15 +127,25 @@ class EntryForm extends FormBase {
     $config = $this->config('tfa.settings');
     $fallbacks = $config->get('fallback_plugins');
     $values = $form_state->getValues();
-    if (!$validated && isset($fallbacks[$config->get('validate_plugin')]) && strlen($values['code']) > 6) {
-      $fallback = key($fallbacks[$config->get('validate_plugin')]);
-      $fallback_plugin = $this->tfaValidationManager->createInstance($fallback, ['uid' => $values['account']->id()]);
+
+    if (!$validated && isset($fallbacks[$config->get('validate_plugin')])) {
       $form_state->clearErrors();
-      if (!$fallback_plugin->validate($values['code'])) {
-        $errors = $fallback_plugin->getErrorMessages();
-        $form_state->setErrorByName(key($errors), current($errors));
+      $errors = $this->tfaValidationPlugin->getErrorMessages();
+      $form_state->setErrorByName(key($errors), current($errors));
+      foreach ($fallbacks[$config->get('validate_plugin')] as $fallback => $val) {
+        $fallback_plugin = $this->tfaValidationManager->createInstance($fallback, ['uid' => $values['account']->id()]);
+        if (!$fallback_plugin->validateForm($form, $form_state)) {
+          $errors = $fallback_plugin->getErrorMessages();
+          $form_state->setErrorByName(key($errors), current($errors));
+        }
+        else {
+          $form_state->clearErrors();
+          break;
+        }
       }
     }
+
+
     if (!empty($this->tfaLoginPlugins)) {
       foreach ($this->tfaLoginPlugins as $login_plugin) {
         if (method_exists($login_plugin, 'validateForm')) {

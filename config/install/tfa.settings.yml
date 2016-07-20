@@ -12,5 +12,5 @@ name_prefix: ''
 validation_skip: 3
 encryption: ''
 trust_cookie_expiration: 2592000
-cookie_name: 'TB'
+cookie_name: 'TFA'
 cookie_domain: ''

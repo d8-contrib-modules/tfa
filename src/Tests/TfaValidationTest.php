@@ -38,7 +38,7 @@ class TfaValidationTest extends WebTestBase {
   /**
    * {@inheritdoc}
    */
-  public static $modules = ['tfa', 'node'];
+  public static $modules = ['tfa', 'node', 'encrypt', 'key'];
 
   /**
    * {@inheritdoc}

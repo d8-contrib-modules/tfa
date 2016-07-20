@@ -1,0 +1,9 @@
+name: TFA Web Services
+type: module
+description: TFA web service provider for the Services Module.
+core: 8.x
+package: Services
+dependencies:
+  - services
+  - tfa
+

@@ -89,7 +89,26 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
    * {@inheritdoc}
    */
   public function validateForm(array $form, FormStateInterface $form_state) {
-    return $this->validate($form_state['values']['recover']);
+    $values = $form_state->getValues();
+    return $this->validate($values['code']);
+  }
+
+  /**
+   * Simple validate for web services.
+   *
+   * @param int $code
+   *   OTP Code.
+   *
+   * @return bool
+   *   True if validation was successful otherwise false.
+   */
+  public function validateRequest($code) {
+    if ($this->validate($code)) {
+      $this->storeAcceptedCode($code);
+      return TRUE;
+    }
+
+    return FALSE;
   }
 
   /**
@@ -161,12 +180,12 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
   /**
    * {@inheritdoc}
    */
-  public function validate($code) {
+  protected function validate($code) {
     $this->isValid = FALSE;
     // Get codes and compare.
     $codes = $this->getCodes();
     if (empty($codes)) {
-      $this->errorMessages['code'] = t('You have no unused codes available.');
+      $this->errorMessages['recovery_code'] = t('You have no unused codes available.');
       return FALSE;
     }
     // Remove empty spaces.
@@ -180,7 +199,7 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
         return $this->isValid;
       }
     }
-    $this->errorMessages['code'] = t('Invalid recovery code.');
+    $this->errorMessages['recovery_code'] = t('Invalid recovery code.');
     return $this->isValid;
   }
 
@@ -189,16 +208,6 @@ class TfaRecoveryCode extends TfaBasePlugin implements TfaValidationInterface {
    */
   public function getFallbacks() {
     return ($this->pluginDefinition['fallbacks']) ?: '';
-  }
-
-  /**
-   * Error messages of the current setup.
-   *
-   * @return string[]
-   *   An array of current errors.
-   */
-  public function getErrorMessages() {
-    return $this->errorMessages;
   }
 
   /**
