@@ -128,11 +128,11 @@ class EntryForm extends FormBase {
     $fallbacks = $config->get('fallback_plugins');
     $values = $form_state->getValues();
 
-    if (!$validated && isset($fallbacks[$config->get('validate_plugin')])) {
+    if (!$validated && isset($fallbacks[$config->get('validation_plugin')])) {
       $form_state->clearErrors();
       $errors = $this->tfaValidationPlugin->getErrorMessages();
       $form_state->setErrorByName(key($errors), current($errors));
-      foreach ($fallbacks[$config->get('validate_plugin')] as $fallback => $val) {
+      foreach ($fallbacks[$config->get('validation_plugin')] as $fallback => $val) {
         $fallback_plugin = $this->tfaValidationManager->createInstance($fallback, ['uid' => $values['account']->id()]);
         if (!$fallback_plugin->validateForm($form, $form_state)) {
           $errors = $fallback_plugin->getErrorMessages();
@@ -144,7 +144,6 @@ class EntryForm extends FormBase {
         }
       }
     }
-
 
     if (!empty($this->tfaLoginPlugins)) {
       foreach ($this->tfaLoginPlugins as $login_plugin) {

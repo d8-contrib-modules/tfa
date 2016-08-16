@@ -216,9 +216,11 @@ class BasicSetup extends FormBase {
         unset($storage[$method]);
       }
 
-      // Trigger multi-step if in full setup.
-      if (!empty($storage['full_setup']) && !empty($storage[$method])) {
-        $this->tfaNextSetupStep($form_state, $method, $storage[$method], $skipped_method);
+      if (!empty($storage[$method])) {
+        // Trigger multi-step if in full setup.
+        if (!empty($storage['full_setup'])) {
+          $this->tfaNextSetupStep($form_state, $method, $storage[$method], $skipped_method);
+        }
 
         // Plugin form submit.
         $setup_class = $storage[$method];
@@ -259,9 +261,9 @@ class BasicSetup extends FormBase {
    */
   private function tfaFullSetupSteps() {
     $config = $this->config('tfa.settings');
-    $enabled_plugin = $config->get('validate_plugin');
+    $enabled_plugin = $config->get('validation_plugin');
     $steps = [
-      $config->get('validate_plugin'),
+      $config->get('validation_plugin'),
       key($config->get('fallback_plugins')[$enabled_plugin]),
     ];
 
@@ -293,7 +295,6 @@ class BasicSetup extends FormBase {
     $storage['steps_left'] = array_diff($storage['steps_left'], [$this_step]);
     if (!empty($storage['steps_left'])) {
       // Contextual reporting.
-      $output = '';
       if ($output = $step_class->getSetupMessages()) {
         $output = $skipped_step ? $output['skipped'] : $output['saved'];
       }

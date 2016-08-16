@@ -122,6 +122,7 @@ class SettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function buildForm(array $form, FormStateInterface $form_state) {
+    $uid = $this->currentUser()->id();
     $config = $this->config('tfa.settings');
     $form = [];
 
@@ -131,29 +132,34 @@ class SettingsForm extends ConfigFormBase {
     // Get Send Plugins.
     $send_plugins = $this->tfaSend->getDefinitions();
 
+    // Get Setup Plugins.
+    $setup_plugins = $this->tfaSetup->getDefinitions();
+
     // Get Validation Plugins.
-    $validate_plugins = $this->tfaValidation->getDefinitions();
+    $validation_plugins = $this->tfaValidation->getDefinitions();
     // Get validation plugin labels and their fallbacks.
-    $validate_plugins_labels = [];
-    $validate_plugins_fallbacks = [];
+    $validation_plugins_labels = [];
+    $validation_plugins_fallbacks = [];
     $fallback_plugins_labels = [];
-    foreach ($validate_plugins as $plugin) {
+    foreach ($validation_plugins as $key => $plugin) {
+      // Skip this plugin if no setup class is available.
+      if (!isset($setup_plugins[$key . '_setup'])){
+        unset($validation_plugins[$key]);
+        continue;
+      }
       if ($plugin['isFallback']) {
         $fallback_plugins_labels[$plugin['id']] = $plugin['label']->render();
         continue;
       }
-      $validate_plugins_labels[$plugin['id']] = $plugin['label']->render();
+      $validation_plugins_labels[$plugin['id']] = $plugin['label']->render();
       if (isset($plugin['fallbacks'])) {
-        $validate_plugins_fallbacks[$plugin['id']] = $plugin['fallbacks'];
+        $validation_plugins_fallbacks[$plugin['id']] = $plugin['fallbacks'];
       }
     }
-
-    // Get Setup Plugins.
-    $setup_plugins = $this->tfaSetup->getDefinitions();
     // Fetching all available encrpytion profiles.
     $encryption_profiles = $this->encryptionProfileManager->getAllEncryptionProfiles();
 
-    $plugins_empty = $this->dataEmptyCheck($validate_plugins, 'No plugins available for validation. See the TFA help documentation for setup.');
+    $plugins_empty = $this->dataEmptyCheck($validation_plugins, 'No plugins available for validation. See the TFA help documentation for setup.');
     $encryption_profiles_empty = $this->dataEmptyCheck($encryption_profiles, 'No Encryption profiles available. Please set one up.');
 
     if ($plugins_empty || $encryption_profiles_empty) {
@@ -177,12 +183,12 @@ class SettingsForm extends ConfigFormBase {
       ],
     ];
 
-    if (count($validate_plugins)) {
+    if (count($validation_plugins)) {
       $form['tfa_validate'] = [
         '#type' => 'select',
         '#title' => $this->t('Validation plugin'),
-        '#options' => $validate_plugins_labels,
-        '#default_value' => $config->get('validate_plugin') ?: 'tfa_totp',
+        '#options' => $validation_plugins_labels,
+        '#default_value' => $config->get('validation_plugin') ?: 'tfa_totp',
         '#description' => $this->t('Plugin that will be used as the default TFA process.'),
         // Show only when TFA is enabled.
         '#states' => $enabled_state,
@@ -197,7 +203,7 @@ class SettingsForm extends ConfigFormBase {
       ];
     }
 
-    if (count($validate_plugins_fallbacks)) {
+    if (count($validation_plugins_fallbacks)) {
       $form['tfa_fallback'] = [
         '#type' => 'fieldset',
         '#title' => $this->t('Validation fallback plugins'),
@@ -207,7 +213,7 @@ class SettingsForm extends ConfigFormBase {
       ];
 
       $enabled_fallback_plugins = $config->get('fallback_plugins');
-      foreach ($validate_plugins_fallbacks as $plugin => $fallbacks) {
+      foreach ($validation_plugins_fallbacks as $plugin => $fallbacks) {
         $fallback_state = [
           'visible' => [
             ':input[name="tfa_validate"]' => ['value' => $plugin],
@@ -217,6 +223,7 @@ class SettingsForm extends ConfigFormBase {
           foreach ($fallbacks as $fallback) {
             $order = (@$enabled_fallback_plugins[$plugin][$fallback]['weight']) ?: -2;
             $fallback_value = (@$enabled_fallback_plugins[$plugin][$fallback]['enable']) ?: 1;
+            $fallback_instance = $this->tfaValidation->createInstance($fallback, ['uid' => $uid]);
             $form['tfa_fallback'][$plugin][$fallback] = [
               'enable' => [
                 '#title' => $fallback_plugins_labels[$fallback],
@@ -224,6 +231,7 @@ class SettingsForm extends ConfigFormBase {
                 '#default_value' => $fallback_value,
                 '#states' => $fallback_state,
               ],
+              'settings' => $fallback_instance->buildConfigurationForm($config, $fallback_state),
               'weight' => [
                 '#type' => 'weight',
                 '#title' => $this->t('Order'),
@@ -245,51 +253,31 @@ class SettingsForm extends ConfigFormBase {
       }
     }
 
-    $totp_enabled_state = [
-      'visible' => [
-        ':input[name="tfa_enabled"]' => ['checked' => TRUE],
-        'select[name="tfa_validate"]' => ['value' => 'tfa_totp'],
-      ],
-    ];
-
-    $hotp_enabled_state = [
-      'visible' => [
-        ':input[name="tfa_enabled"]' => ['checked' => TRUE],
-        'select[name="tfa_validate"]' => ['value' => 'tfa_hotp'],
-      ],
-    ];
-
-    $form['extra_settings']['tfa_totp'] = [
+    // Validation plugin related settings.
+    // $validation_plugins_labels has the plugin ids as the key.
+    $form['validation_plugin_settings'] = [
       '#type' => 'fieldset',
-      '#title' => $this->t('Extra Settings'),
-      '#descrption' => $this->t('Extra plugin settings.'),
-      '#states' => $totp_enabled_state,
+      '#title' => t('Extra Settings'),
+      '#descrption' => t('Extra plugin settings.'),
+      '#tree' => TRUE,
+      '#states' => $enabled_state,
     ];
+    foreach($validation_plugins_labels as $key => $val) {
+      $instance = $this->tfaValidation->createInstance($key, [
+        'uid' => $this->currentUser()->id()
+        ]
+      );
 
-    $form['extra_settings']['tfa_totp']['time_skew'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Time Skew'),
-      '#default_value' => ($config->get('time_skew')) ?: 30,
-      '#description' => 'Number of 30 second chunks to allow TOTP keys between.',
-      '#size' => 2,
-      '#required' => TRUE,
-    ];
-
-    $form['extra_settings']['tfa_hotp'] = [
-      '#type' => 'fieldset',
-      '#title' => $this->t('Extra Settings'),
-      '#descrption' => $this->t('Extra plugin settings.'),
-      '#states' => $hotp_enabled_state,
-    ];
-
-    $form['extra_settings']['tfa_hotp']['counter_window'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Counter Window'),
-      '#default_value' => ($config->get('counter_window')) ?: 5,
-      '#description' => 'How far ahead from current counter should we check the code.',
-      '#size' => 2,
-      '#required' => TRUE,
-    ];
+      if(method_exists($instance, 'buildConfigurationForm')) {
+        $validation_enabled_state = [
+          'visible' => [
+            ':input[name="tfa_enabled"]' => ['checked' => TRUE],
+            'select[name="tfa_validate"]' => ['value' => $key],
+          ],
+        ];
+        $form['validation_plugin_settings'][$key] = $instance->buildConfigurationForm($config, $validation_enabled_state);
+      }
+    }
 
     // The encryption profiles select box.
     $encryption_profile_labels = [];
@@ -306,31 +294,12 @@ class SettingsForm extends ConfigFormBase {
       '#required' => TRUE,
     ];
 
-    $form['recovery_codes_amount'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('Recovery Codes Amount'),
-      '#default_value' => ($config->get('recovery_codes_amount')) ?: 10,
-      '#description' => 'Number of Recovery Codes To Generate.',
-      '#states' => $enabled_state,
-      '#size' => 2,
-    ];
-
     $form['validation_skip'] = [
       '#type' => 'textfield',
       '#title' => $this->t('Skip Validation'),
       '#default_value' => ($config->get('validation_skip')) ?: 2,
       '#description' => 'No. of times a user without having setup tfa validation can login.',
       '#size' => 2,
-      '#states' => $enabled_state,
-      '#required' => TRUE,
-    ];
-
-    $form['name_prefix'] = [
-      '#type' => 'textfield',
-      '#title' => $this->t('OTP QR Code Prefix'),
-      '#default_value' => ($config->get('name_prefix')) ?: 'tfa',
-      '#description' => 'Prefix for OTP QR code names. Suffix is account username.',
-      '#size' => 15,
       '#states' => $enabled_state,
       '#required' => TRUE,
     ];
@@ -375,26 +344,6 @@ class SettingsForm extends ConfigFormBase {
       ];
     }
 
-    // Enable setup plugins.
-    if (count($setup_plugins) >= 1) {
-      $setup_form_array = [];
-
-      foreach ($setup_plugins as $setup_plugin) {
-        $id = $setup_plugin['id'];
-        $title = $setup_plugin['label']->render();
-        $setup_form_array[$id] = $title;
-      }
-
-      $form['tfa_setup'] = [
-        '#type' => 'checkboxes',
-        '#title' => $this->t('Setup plugins'),
-        '#options' => $setup_form_array,
-        '#default_value' => ($config->get('setup_plugins')) ? $config->get('setup_plugins') : [],
-        '#description' => $this->t('Not sure what this is'),
-      ];
-
-    }
-
     $form['actions']['#type'] = 'actions';
     $form['actions']['submit'] = [
       '#type' => 'submit',
@@ -425,31 +374,25 @@ class SettingsForm extends ConfigFormBase {
    * {@inheritdoc}
    */
   public function submitForm(array &$form, FormStateInterface $form_state) {
-    $validate_plugin = $form_state->getValue('tfa_validate');
+    $validation_plugin = $form_state->getValue('tfa_validate');
     $fallback_plugins = $form_state->getValue('tfa_fallback');
+    $validation_plugin_settings = $form_state->getValue('validation_plugin_settings');
 
     // Delete tfa data if plugin is disabled.
     if ($this->config('tfa.settings')->get('enabled') && !$form_state->getValue('tfa_enabled')) {
       $this->userData->delete('tfa');
     }
 
-    $setup_plugins = $form_state->getValue('tfa_setup') ?: [];
     $send_plugins = $form_state->getValue('tfa_send') ?: [];
     $login_plugins = $form_state->getValue('tfa_login') ?: [];
-    $encryption_profile = $form_state->getValue('encryption');
     $this->config('tfa.settings')
       ->set('enabled', $form_state->getValue('tfa_enabled'))
-      ->set('time_skew', $form_state->getValue('time_skew'))
-      ->set('counter_window', $form_state->getValue('counter_window'))
-      ->set('recovery_codes_amount', $form_state->getValue('recovery_codes_amount'))
-      ->set('name_prefix', $form_state->getValue('name_prefix'))
-      ->set('setup_plugins', array_filter($setup_plugins))
       ->set('send_plugins', array_filter($send_plugins))
       ->set('login_plugins', array_filter($login_plugins))
-      ->set('validate_plugin', $validate_plugin)
+      ->set('validation_plugin', $validation_plugin)
+      ->set('validation_plugin_settings', $validation_plugin_settings)
       ->set('fallback_plugins', $fallback_plugins)
-      ->set('validation_skip', $form_state
-      ->getValue('validation_skip'))
+      ->set('validation_skip', $form_state->getValue('validation_skip'))
       ->set('encryption', $form_state->getValue('encryption_profile'))
       ->save();
 

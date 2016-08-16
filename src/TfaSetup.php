@@ -44,9 +44,11 @@ class TfaSetup {
    *   An associative array containing the structure of the form.
    * @param \Drupal\Core\Form\FormStateInterface $form_state
    *   The current state of the form.
+   * @param int $reset
+   *   Reset the data or not.
    *
-   * @return array
-   *   Form API array.
+   * @return array Form API array.
+   *    Form API array.
    */
   public function getForm(array $form, FormStateInterface &$form_state, $reset = 0) {
     return $this->setupPlugin->getSetupForm($form, $form_state, $reset);

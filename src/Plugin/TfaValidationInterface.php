@@ -39,11 +39,6 @@ interface TfaValidationInterface {
   public function validateForm(array $form, FormStateInterface $form_state);
 
   /**
-   * Purge all the plugin related data.
-   */
-  public function purge();
-
-  /**
    * Get validation plugin fallbacks.
    *
    * @return string[]

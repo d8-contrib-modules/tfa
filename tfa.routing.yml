@@ -29,10 +29,10 @@ tfa.settings.reset:
     _permission: 'administer site configuration'
 
 tfa.login:
-  path: 'tfalogin'
+  path: '/tfa/login'
   defaults:
     _form: '\Drupal\tfa\Form\TfaLoginForm'
-    _title: 'User Login'
+    _title: 'User Logon'
   requirements:
     _user_is_logged_in: 'FALSE'
   options:

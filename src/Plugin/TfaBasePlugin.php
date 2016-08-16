@@ -47,11 +47,11 @@ abstract class TfaBasePlugin extends PluginBase {
   protected $isValid;
 
   /**
-   * The user secret.
+   * Whether the code has been used before.
    *
    * @var string
    */
-  protected $encryptionKey;
+  protected $alreadyAccepted;
 
   /**
    * Provides the user data service object.

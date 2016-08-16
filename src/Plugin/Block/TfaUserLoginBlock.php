@@ -74,37 +74,41 @@ class TfaUserLoginBlock extends UserLoginBlock {
    * {@inheritdoc}
    */
   public function build() {
-    // Get the default build info.
     $form = \Drupal::formBuilder()->getForm('Drupal\tfa\Form\TfaLoginForm');
     unset($form['name']['#attributes']['autofocus']);
+    // When unsetting field descriptions, also unset aria-describedby attributes
+    // to avoid introducing an accessibility bug.
+    // @todo Do this automatically in https://www.drupal.org/node/2547063.
     unset($form['name']['#description']);
+    unset($form['name']['#attributes']['aria-describedby']);
     unset($form['pass']['#description']);
+    unset($form['pass']['#attributes']['aria-describedby']);
     $form['name']['#size'] = 15;
     $form['pass']['#size'] = 15;
-    // $form['#action'] = $this->url('<current>', [], ['query' => $this->getDestinationArray(), 'external' => FALSE]);
+    $form['#action'] = $this->url('<current>', [], ['query' => $this->getDestinationArray(), 'external' => FALSE]);
     // Build action links.
-    $items = [];
+    $items = array();
     if (\Drupal::config('user.settings')->get('register') != USER_REGISTER_ADMINISTRATORS_ONLY) {
-      $items['create_account'] = \Drupal::l($this->t('Create new account'), new Url('user.register', [], [
-        'attributes' => [
+      $items['create_account'] = \Drupal::l($this->t('Create new account'), new Url('user.register', array(), array(
+        'attributes' => array(
           'title' => $this->t('Create a new user account.'),
-          'class' => ['create-account-link'],
-        ],
-      ]));
+          'class' => array('create-account-link'),
+        ),
+      )));
     }
-    $items['request_password'] = \Drupal::l($this->t('Reset your password'), new Url('user.pass', [], [
-      'attributes' => [
-        'title' => $this->t('Send password reset instructions via e-mail.'),
-        'class' => ['request-password-link'],
-      ],
-    ]));
-    return [
+    $items['request_password'] = \Drupal::l($this->t('Reset your password'), new Url('user.pass', array(), array(
+      'attributes' => array(
+        'title' => $this->t('Send password reset instructions via email.'),
+        'class' => array('request-password-link'),
+      ),
+    )));
+    return array(
       'user_login_form' => $form,
-      'user_links' => [
+      'user_links' => array(
         '#theme' => 'item_list',
         '#items' => $items,
-      ],
-    ];
+      ),
+    );
   }
 
 }

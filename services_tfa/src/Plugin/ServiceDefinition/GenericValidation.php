@@ -51,7 +51,7 @@ class GenericValidation extends ServiceDefinitionBase implements ContainerFactor
   protected $userData;
 
   /**
-   * TOTPLogin constructor.
+   * TFA Web Services constructor.
    *
    * @param array $configuration
    *   The configuration array.

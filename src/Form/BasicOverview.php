@@ -88,8 +88,7 @@ class BasicOverview extends FormBase {
           ]);
         }
         else {
-          $status_text = $this->t('Status: <strong>TFA enabled</strong>, set
-          @time.', [
+          $status_text = $this->t('Status: <strong>TFA enabled</strong>, set @time.', [
             '@time' => $date_formatter->format($user_tfa['saved']),
           ]);
         }
@@ -108,7 +107,7 @@ class BasicOverview extends FormBase {
     if ($configuration['enabled']) {
       $enabled = isset($user_tfa['status']) && $user_tfa['status'] ? TRUE : FALSE;
       // Validation plugin setup.
-      $enabled_plugin = $configuration['validate_plugin'];
+      $enabled_plugin = $configuration['validation_plugin'];
       $enabled_fallback_plugin = '';
       if (isset($configuration['fallback_plugins'][$enabled_plugin])) {
         $enabled_fallback_plugin = key($configuration['fallback_plugins'][$enabled_plugin]);

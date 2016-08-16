@@ -2,7 +2,7 @@
 
 /**
  * @file
- * Install function for TFA module.
+ * Installation related functions for TFA module.
  */
 
 /**
@@ -13,4 +13,25 @@ function tfa_install() {
   \Drupal::configFactory()->getEditable('tfa.settings')
          ->set('name_prefix', \Drupal::config('system.site')->get('name'))
          ->save();
+}
+
+/**
+ * Implements hook_requirements().
+ */
+function tfa_requirements($phase) {
+  $requirements = array();
+
+  $requirements['tfa'] = array(
+    'title' => t('Two-factor Authentication (TFA)'),
+  );
+
+  if (class_exists('\Otp\Otp')) {
+    $requirements['tfa']['severity'] = REQUIREMENT_OK;
+  }
+  else {
+    $requirements['tfa']['severity'] = REQUIREMENT_ERROR;
+    $requirements['tfa']['description'] = t("Please install the 'christian-riesen/otp' library via composer. See the module README for instructions.");
+  }
+
+  return $requirements;
 }

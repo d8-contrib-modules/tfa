@@ -24,55 +24,6 @@ function tfa_help($route_name, RouteMatchInterface $route_match) {
   }
 }
 
-// @todo Not sure about the following functions. Left here for future reference.
-/**
- * Implements hook_user_login().
- */
-function tfa_user_login($account) {
-  if (!\Drupal::config('tfa.settings')->get('enabled')) {
-    drupal_set_message(t('TFA is not enabled.'));
-    return;
-  }
-
-  // drupal_set_message(t('TFA is enabled.'));
-  // $tfa = tfa_get_process($account);
-  /*
-  if ($account->hasPermission('require tfa') && !tfa_login_complete($account) && !$tfa->ready()) {
-  tfa_logout();
-  drupal_set_message(t('Login disallowed. You are required to setup two-factor authentication. Please contact a site administrator.'), 'error');
-  drupal_goto('user');
-  }
-  elseif (!tfa_login_complete($account) && $tfa->ready() && !tfa_login_allowed($account)) {
-  // User has been authenticated so force logout and redirect to TFA form.
-  tfa_logout();
-  // Restart flood levels, session context, and TFA process.
-  flood_clear_event('tfa_validate');
-  flood_register_event('tfa_begin');
-  $context = tfa_start_context($account);
-  $tfa = tfa_get_process($account);
-
-  // Hold onto destination. It will be used in tfa_form_submit().
-  $query = drupal_get_query_parameters();
-  if (arg(0) == 'user' && arg(1) == 'reset') {
-  // If one-time login reset destination and hold onto token.
-  $query['destination'] = 'user/' . $account->uid . '/edit';
-  $query['pass-reset-token'] = arg(4);
-  }
-  unset($_GET['destination']);
-
-  // Begin TFA and set process context.
-  $tfa->begin();
-  $context = $tfa->getContext();
-  tfa_set_context($account, $context);
-
-  $login_hash = tfa_login_hash($account);
-  // Use of $_GET['destination'] would allow other hooks to run but since the
-  // current user is no longer authenticated their expectation would be wrong.
-  drupal_goto('system/tfa/' . $account->uid . '/' . $login_hash, array('query' => $query));
-  }
-   */
-}
-
 /**
  * Implements hook_block_access().
  *
@@ -83,14 +34,4 @@ function tfa_block_access(Block $block, $operation, AccountInterface $account) {
   if (\Drupal::config('tfa.settings')->get('enabled') && $block->getPluginId() === 'user_login_block') {
     return AccessResult::forbidden();
   }
-}
-
-/**
- * Implements hook_block_alter().
- *
- * Removes the User Login Block if the TFA module is enabled. The TFA User Login
- * block will function with or without TFA actually being enabled.
- */
-function tfa_block_alter(&$definitions) {
-  unset($definitions['user_login_block']);
 }

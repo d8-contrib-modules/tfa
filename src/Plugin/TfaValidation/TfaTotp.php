@@ -3,13 +3,11 @@
 namespace Drupal\tfa\Plugin\TfaValidation;
 
 use Base32\Base32;
-use Drupal\Core\DependencyInjection\DependencySerializationTrait;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\encrypt\EncryptionProfileManagerInterface;
 use Drupal\encrypt\EncryptServiceInterface;
 use Drupal\tfa\Plugin\TfaBasePlugin;
 use Drupal\tfa\Plugin\TfaValidationInterface;
-use Drupal\tfa\TfaDataTrait;
 use Drupal\user\UserDataInterface;
 use Otp\GoogleAuthenticator;
 use Otp\Otp;
@@ -20,7 +18,7 @@ use Symfony\Component\DependencyInjection\ContainerInterface;
  *
  * @TfaValidation(
  *   id = "tfa_totp",
- *   label = @Translation("TFA Totp"),
+ *   label = @Translation("TFA Time-based OTP(TOTP)"),
  *   description = @Translation("TFA Totp Validation Plugin"),
  *   fallbacks = {
  *    "tfa_recovery_code"
@@ -44,6 +42,13 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
   protected $timeSkew;
 
   /**
+   * Name prefix.
+   *
+   * @var string
+   */
+  protected $namePrefix;
+
+  /**
    * Whether the code has already been used or not.
    *
    * @var bool
@@ -59,7 +64,9 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     $this->auth->otp = new Otp();
     $this->auth->ga = new GoogleAuthenticator();
     // Allow codes within tolerance range of 3 * 30 second units.
-    $this->timeSkew = \Drupal::config('tfa.settings')->get('time_skew');
+    $settings = \Drupal::config('tfa.settings')->get('validation_plugin_settings')['tfa_totp'];
+    $this->timeSkew = $settings['time_skew'];
+    $this->namePrefix = $settings['name_prefix'];
     $this->alreadyAccepted = FALSE;
   }
 
@@ -107,6 +114,30 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
     ];
 
     return $form;
+  }
+
+  public function buildConfigurationForm($config, $state) {
+    $settings_form['time_skew'] = [
+      '#type' => 'textfield',
+      '#title' => t('Time Skew'),
+      '#default_value' => ($this->timeSkew) ?: 30,
+      '#description' => 'Number of 30 second chunks to allow TOTP keys between.',
+      '#size' => 2,
+      '#states' => $state,
+      '#required' => TRUE,
+    ];
+
+    $settings_form['name_prefix'] = [
+      '#type' => 'textfield',
+      '#title' => t('OTP QR Code Prefix'),
+      '#default_value' => ($this->namePrefix) ?: 'tfa',
+      '#description' => 'Prefix for OTP QR code names. Suffix is account username.',
+      '#size' => 15,
+      '#states' => $state,
+      '#required' => TRUE,
+    ];
+
+    return $settings_form;
   }
 
   /**
@@ -217,13 +248,6 @@ class TfaTotp extends TfaBasePlugin implements TfaValidationInterface {
    */
   protected function deleteSeed() {
     $this->deleteUserData('tfa', 'tfa_totp_seed', $this->uid, $this->userData);
-  }
-
-  /**
-   * {@inheritdoc}
-   */
-  public function purge() {
-    $this->deleteSeed();
   }
 
   /**

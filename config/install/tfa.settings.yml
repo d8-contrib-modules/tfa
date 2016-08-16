@@ -1,11 +1,8 @@
 enabled: 0
-time_skew: 30
-counter_window: 5
-recovery_codes_amount: 10
-setup_plugins: { }
 send_plugins: { }
 login_plugins: { }
-validate_plugin: 'tfa_totp'
+validation_plugin: 'tfa_totp'
+validation_plugin_settings: { }
 fallback_plugins: { }
 help_text: 'Contact support to reset your access'
 name_prefix: ''

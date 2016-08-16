@@ -6,7 +6,7 @@ use Drupal\Component\Utility\Crypt;
 use Drupal\Core\Flood\FloodInterface;
 use Drupal\Core\Form\FormStateInterface;
 use Drupal\Core\Render\RendererInterface;
-use Drupal\Core\Session\AccountInterface;
+use Drupal\Core\Url;
 use Drupal\tfa\Plugin\TfaSendInterface;
 use Drupal\tfa\Plugin\TfaValidationInterface;
 use Drupal\tfa\TfaDataTrait;
@@ -110,8 +110,9 @@ class TfaLoginForm extends UserLoginForm {
   }
 
   /**
-   * Login submit handler to determine if TFA process is applicable. If not,
-   * call the parent form submit.
+   * Login submit handler.
+   *
+   * Determine if TFA process is applicable.If not, call the parent form submit.
    *
    * {@inheritdoc}
    */
@@ -128,24 +129,27 @@ class TfaLoginForm extends UserLoginForm {
 
     // GetPlugin
     // Pass to service functions.
-    $validate_plugin = $this->config('tfa.settings')->get('validate_plugin');
-    $tfaValidationPlugin = $this->tfaValidationManager->createInstance($validate_plugin, ['uid' => $account->id()]);
+    $validation_plugin = $this->config('tfa.settings')->get('validation_plugin');
+    $tfaValidationPlugin = $this->tfaValidationManager->createInstance($validation_plugin, ['uid' => $account->id()]);
     $this->tfaLoginPlugins = $this->tfaLoginManager->getPlugins(['uid' => $account->id()]);
 
     // Setup TFA.
-    if (isset($tfaValidationPlugin) && $tfa_enabled) {
-      if ($account->hasPermission('require tfa') && $this->ready($tfaValidationPlugin) && $tfa_enabled && $this->loginAllowed()) {
+    if (isset($tfaValidationPlugin) && $tfa_enabled && $account->hasPermission('require tfa')) {
+      if ($this->ready($tfaValidationPlugin) && $this->loginAllowed()) {
         user_login_finalize($account);
         drupal_set_message('You have logged in on a trusted browser.');
         $form_state->setRedirect('<front>');
       }
-      elseif ($account->hasPermission('require tfa') && !$this->ready($tfaValidationPlugin) && $tfa_enabled) {
+      elseif (!$this->ready($tfaValidationPlugin)) {
         $tfa_data = $this->tfaGetTfaData($account->id(), $this->userData);
         $validation_skipped = (isset($tfa_data['validation_skipped'])) ? $tfa_data['validation_skipped'] : 0;
         if ($allowed_skips && ($left = $allowed_skips - ++$validation_skipped) >= 0) {
           $tfa_data['validation_skipped'] = $validation_skipped;
 
-          $tfa_setup_link = '/user/' . $account->id() . '/security/tfa/tfa_totp';
+          $tfa_setup_link = Url::fromRoute('tfa.overview', array(
+            'user' => $account->id(),
+          ));
+          $tfa_setup_link = $tfa_setup_link->toString();
           drupal_set_message($this->t('You are required to setup two-factor
           authentication <a href="@link">here.</a> You have @skipped attempts
           left after this you will be unable to login.', [
@@ -157,26 +161,17 @@ class TfaLoginForm extends UserLoginForm {
           $form_state->setRedirect('<front>');
         }
       }
-      elseif ($this->ready($tfaValidationPlugin) && !$this->loginAllowed($account) && $tfa_enabled) {
+      elseif ($this->ready($tfaValidationPlugin) && !$this->loginAllowed($account)) {
 
         // Restart flood levels, session context, and TFA process.
         // flood_clear_event('tfa_validate');
         // flood_register_event('tfa_begin');
-        //      $context = tfa_start_context($account);
-        //      $tfa = _tfa_get_process($account);
         // $query = drupal_get_query_parameters();
-        if (!empty($form_state->redirect)) {
-          // If there's an existing redirect set it in TFA context and
-          // tfa_form_submit() will extract and set once process is complete.
-          $context['redirect'] = $form_state->redirect;
-        }
 
         // Begin TFA and set process context.
         // @todo This is used in send plugins which has not been implemented
         // yet.
-        //$this->begin($tfaValidationPlugin);
-        // $context = $tfa->getContext();
-        // $this->tfaManager->setContext($account, $context);.
+        // $this->begin($tfaValidationPlugin);
         $login_hash = $this->getLoginHash($account);
         $form_state->setRedirect(
           'tfa.entry',
@@ -195,7 +190,6 @@ class TfaLoginForm extends UserLoginForm {
     else {
       return parent::submitForm($form, $form_state);
     }
-
   }
 
   /**

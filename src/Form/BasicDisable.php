@@ -159,19 +159,9 @@ class BasicDisable extends FormBase {
       $form_state->setRedirect('tfa.overview', ['user' => $account->id()]);
       return;
     }
-    $this->tfaSaveTfaData($account->id(), $this->userData, ['status' => FALSE]);
 
-    // Delete OTP Seed.
-    $validate_plugin = $this->config('tfa.settings')->get('validate_plugin');
-    $validation_plugin = $this->manager->createInstance($validate_plugin, ['uid' => $account->id()]);
-    $validation_plugin->purge();
-
-    $fallbacks = $validation_plugin->getFallbacks();
-
-    foreach ($fallbacks as $fallback) {
-      $fallback_plugin = $this->manager->createInstance($fallback, ['uid' => $account->id()]);
-      $fallback_plugin->purge();
-    }
+    // Delete all user data.
+    $this->deleteUserData('tfa', null, $account->id(), $this->userData);
 
     \Drupal::logger('tfa')->notice('TFA disabled for user @name UID @uid', [
       '@name' => $account->getUsername(),
@@ -181,7 +171,7 @@ class BasicDisable extends FormBase {
     // @todo Not working, not sure why though.
     // E-mail account to inform user that it has been disabled.
     $params = ['account' => $account];
-    \Drupal::service('plugin.manager.mail')->mail('tfa_basic', 'tfa_basic_disabled_configuration', $account->getEmail(), $account->getPreferredLangcode(), $params);
+    \Drupal::service('plugin.manager.mail')->mail('tfa', 'tfa_disabled_configuration', $account->getEmail(), $account->getPreferredLangcode(), $params);
 
     drupal_set_message($this->t('TFA has been disabled.'));
     $form_state->setRedirect('tfa.overview', ['user' => $account->id()]);
